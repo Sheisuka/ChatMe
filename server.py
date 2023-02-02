@@ -1,48 +1,39 @@
 import socket
-import select
+import asyncio
 
 
-class Server:
-    def __init__(self, sock=None):
-        if sock is None:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        else:
-            self.sock = sock
-        self.inputs, self.outputs = [self.sock], []
-
-    
-    def setup(self, host, port, max_listen):
-        self.sock.bind((host, port))
-        self.sock.listen(max_listen)
-    
-    def handle(self, sock, addr):
+async def handle_connection(sock, addr):
+    loop = asyncio.get_event_loop()
+    print(f"Connected by {addr}")
+    while True:
         try:
-            data = sock.recv(1024)
+            data = await loop.sock_recv(sock, 1024)
         except ConnectionError:
-            print(f"Client suddenly closed while receiving")
-            return False
-        print(f"Received from {addr}:\n\t{data}")
+            print(f"Client suddenly closed while receiving from {addr}")
+            break
+        print(f"Received data from {addr} :\n\t{data}")
         if not data:
-            print(f"Dicsonnected {addr}")
-            return False
+            break
+    print(f"Disconnected by {addr}")
+    sock.close()
 
-    def receive(self):
-        readable, writeable, exceptional = select.select(self.inputs, self.outputs, self.inputs)
-        for sock in readable:
-            if sock == self.sock:
-                sock, addr = self.sock.accept()
-                print(f"Connected by {addr}")
-                self.inputs.append(sock)
-            else:
-                addr = self.sock.getpeername()
-                if not self.handle(sock, addr):
-                    self.inputs.remove(sock)
-                    if sock in self.outputs:
-                        self.outputs.remove(sock)
-                    sock.close()
-    
-    
-server = Server()
-server.setup('127.0.0.1', 9001, 2)
-while True:
-    server.receive()
+async def main(host, port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as serv_sock:
+        serv_sock.bind((host, port))
+        serv_sock.listen(1)
+        serv_sock.setblocking(0)
+        print("Server started")
+
+        loop = asyncio.get_event_loop()
+        while True:
+            print("Waiting for connection")
+            sock, addr = await loop.sock_accept(serv_sock)
+            loop.create_task(handle_connection(sock, addr))
+
+
+HOST = '127.0.0.1'
+PORT = 9001
+
+if __name__ == "__main__":
+    asyncio.run(main(HOST, PORT))
+
