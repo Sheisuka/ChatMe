@@ -39,8 +39,17 @@ class Interface:
     def create_room(self, key):
         print('server')
 
+    def get_join_room(self):
+        ask = urwid.Edit(("I say", "Enter ip and port.\n For example 127.0.0.1 9000.\n"))
+        reply = urwid.Text("")
+        back_button = urwid.Button("Back")
+        pile = urwid.Pile([ask, urwid.Divider(), reply, urwid.Divider(), back_button])
+        filler = urwid.Filler(pile)
+        return filler
+
     def join_room(self, key):
-        print('room')
+        join_room_filler = self.get_join_room()
+        self.loop.widget = join_room_filler
     
     def exit_program(self, key) -> None:
         raise urwid.ExitMainLoop()
