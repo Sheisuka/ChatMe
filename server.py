@@ -9,7 +9,9 @@ from utility.requests import generate_put_request
 class Server:
     def __init__(self) -> None:
         self.serv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.logger = logging.getLogger(__name
+        #self.logger = logging.getLogger(__name__)
+
+        self.members = []
 
         self.name = 'test_server'
 
@@ -24,7 +26,7 @@ class Server:
 
         self.max_listeners = 2
         self.set_blocking_flag = False
-
+    
     def set_out_address(self):
         nat_type, self.out_host, self.out_port = stun.get_ip_info()
         print(nat_type, self.out_host, self.out_port)
@@ -51,6 +53,7 @@ class Server:
             if not data:
                 break
         print(f"Disconnected by {addr}") # replace with logger + send message to The Room
+        self.members.remove(sock)
         sock.close()
 
     async def main(self) -> None:
@@ -62,6 +65,7 @@ class Server:
         #while True:
         #    print("Waiting for connection") # replace with logger + send message to creator
         #    sock, addr = await loop.sock_accept(self.serv_sock)
+        #    self.members.append(sock)
         #    loop.create_task(self.handle_connection(sock, addr))
     
     def setup(self) -> None:
