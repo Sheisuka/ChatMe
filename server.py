@@ -26,6 +26,14 @@ class Server:
 
         self.max_listeners = 2
         self.set_blocking_flag = False
+
+    def send_to_all(self, message: str):
+        """Sends message to all current members"""
+        for member in self.members:
+            try:
+                member.send(message)
+            except: #add catching exceptions
+                pass
     
     def set_out_address(self):
         nat_type, self.out_host, self.out_port = stun.get_ip_info()
