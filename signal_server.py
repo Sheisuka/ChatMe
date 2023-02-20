@@ -1,6 +1,8 @@
 import socket
 import asyncio
 import sqlite3
+import json
+
 
 
 class SignalServer:
@@ -24,13 +26,16 @@ class SignalServer:
         self.db_conn.commit()
     
     async def save_address(self, data) -> None:
-        in_host, in_port, out_host, out_port, name = data.split('|')
-        data_to_save = (self.in_host + self.in_port, self.out_host + self.out_port, data_to_save)
+        in_address = f"{data['addresses']['in']['host']}:{data['addresses']['in']['port']}"
+        out_address = f"{data['addresses']['out']['host']}:{data['addresses']['out']['port']}"
+        name = data['name']
+        data_to_save = (in_address, out_address, name)
         self.cur.execute("""INSERT INTO addresses(inaddress, outaddress, name)
                             VALUES(?, ?, ?);""", data_to_save)
         self.db_conn.commit()
     
-    async def get_addresses(self, name: str):
+    async def get_address(self, data):
+        name = data['name']
         data = self.cur.execute("""SELECT inaddress, outaddress FROM addresses WHERE name=(?);""", name).fetchone()[0]
         inaddress, outaddress = data[0], data[1]
         await inaddress, outaddress
@@ -51,12 +56,15 @@ class SignalServer:
                 break
             if not data:
                 break
-        answer = self.process_request(data)
+        answer = self.process_request(json.loads(data, encoding='utf-8'))
         sock.send(answer)
         sock.close()
     
     def process_request(self, data):
-        self.in_host, self.in_port, self.out_host, self.out_port, self.name = data.split('|')
+        if data['command'] == 'put':
+            self.save_address(data)
+        elif data['command'] == 'get':
+            self.get_address(data)
 
     def get_all_chats(self):
         ...
