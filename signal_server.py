@@ -1,6 +1,8 @@
 import socket
 import asyncio
 import sqlite3
+import json
+
 
 
 class SignalServer:
@@ -23,14 +25,18 @@ class SignalServer:
         self.db_conn.commit()
     
     async def save_address(self, data) -> None:
-        in_host, in_port, out_host, out_port, name = data
-        data_to_save = (in_host + ':' + in_port, out_host + ':' + out_port, data_to_save)
+        in_address = f"{data['addresses']['in']['host']}:{data['addresses']['in']['port']}"
+        out_address = f"{data['addresses']['out']['host']}:{data['addresses']['out']['port']}"
+        name = data['name']
+        data_to_save = (in_address, out_address, name)
         self.cur.execute("""INSERT INTO addresses(inaddress, outaddress, name)
                             VALUES(?, ?, ?);""", data_to_save)
         self.db_conn.commit()
     
-    async def get_address(self, name: str):
-        inaddress, outaddress = self.cur.execute("""SELECT inaddress, outaddress FROM addresses WHERE name=(?);""", name).fetchone()[0]
+    async def get_address(self, data):
+        name = data['name']
+        data = self.cur.execute("""SELECT inaddress, outaddress FROM addresses WHERE name=(?);""", name).fetchone()[0]
+        inaddress, outaddress = data[0], data[1]
         await inaddress, outaddress
 
     def setup(self) -> None:
@@ -49,16 +55,14 @@ class SignalServer:
                 break
             if not data:
                 break
-        answer = self.process_request(data)
+        answer = self.process_request(json.loads(data, encoding='utf-8'))
         sock.send(answer)
         sock.close()
     
-    async def process_request(self, request):
-        request = request.split('|')
-        command, data = request[0], request[1:]
-        if command.lower() == 'put':
+    def process_request(self, data):
+        if data['command'] == 'put':
             self.save_address(data)
-        elif command.lower() == 'get':
+        elif data['command'] == 'get':
             self.get_address(data)
 
     async def get_all_chats(self):
