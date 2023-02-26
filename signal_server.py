@@ -19,22 +19,20 @@ class SignalServer:
             addressid INT PRIMARY KEY,
             inaddress TEXT,
             outaddress TEXT,
-            name TEXT
-        )""")
+            name TEXT)""")
         self.db_conn.commit()
     
     async def save_address(self, data) -> None:
-        in_host, in_port, out_host, out_port, name = data.split('|')
-        data_to_save = (self.in_host + self.in_port, self.out_host + self.out_port, data_to_save)
+        in_host, in_port, out_host, out_port, name = data
+        data_to_save = (in_host + ':' + in_port, out_host + ':' + out_port, data_to_save)
         self.cur.execute("""INSERT INTO addresses(inaddress, outaddress, name)
                             VALUES(?, ?, ?);""", data_to_save)
         self.db_conn.commit()
     
-    async def get_addresses(self, name: str):
-        data = self.cur.execute("""SELECT inaddress, outaddress FROM addresses WHERE name=(?);""", name).fetchone()[0]
-        inaddress, outaddress = data[0], data[1]
+    async def get_address(self, name: str):
+        inaddress, outaddress = self.cur.execute("""SELECT inaddress, outaddress FROM addresses WHERE name=(?);""", name).fetchone()[0]
         await inaddress, outaddress
-    
+
     def setup(self) -> None:
         self.create_table()
         self.sock.bind((self.host, self.port))
@@ -55,13 +53,18 @@ class SignalServer:
         sock.send(answer)
         sock.close()
     
-    def process_request(self, data):
-        self.in_host, self.in_port, self.out_host, self.out_port, self.name = data.split('|')
+    async def process_request(self, request):
+        request = request.split('|')
+        command, data = request[0], request[1:]
+        if command.lower() == 'put':
+            self.save_address(data)
+        elif command.lower() == 'get':
+            self.get_address(data)
 
-    def get_all_chats(self):
+    async def get_all_chats(self):
         ...
     
-    def get_all_members(chat):
+    async def get_all_members(chat):
         ...
     
     async def run(self) -> None:
@@ -70,3 +73,7 @@ class SignalServer:
         while True:
             sock, addr = await loop.sock_accept(self.sock)
             loop.create_task(self.handle_connection(sock, addr))
+
+
+signal_server = SignalServer()
+signal_server.run()

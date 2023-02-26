@@ -18,5 +18,5 @@ class Client:
 
 
 client = Client()
-client.connect('127.0.0.1', 9001)
+client.connect('127.0.0.1', 9002)
 client.send_messages()
