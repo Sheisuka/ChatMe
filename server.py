@@ -67,21 +67,19 @@ class Server:
     async def main(self) -> None:
         self.setup()
         print("Server started") # replace with logger + send message to creator
-        self.set_out_address()
-        self.connect_to_sig()
-        #loop = asyncio.get_event_loop()
-        #while True:
-        #    print("Waiting for connection") # replace with logger + send message to creator
-        #    sock, addr = await loop.sock_accept(self.serv_sock)
-        #    self.members.append(sock)
-        #    loop.create_task(self.handle_connection(sock, addr))
-    
+        self.put_address_to_sig()
+        loop = asyncio.get_event_loop()
+        while True:
+            print("Waiting for connection") # replace with logger + send message to creator
+            sock, addr = await loop.sock_accept(self.serv_sock)
+            self.members.append(sock)
+            loop.create_task(self.handle_connection(sock, addr))
+            
     def setup(self) -> None:
         self.serv_sock.bind((self.in_host, self.in_port))
         self.serv_sock.listen(self.max_listeners)
         self.serv_sock.setblocking(self.set_blocking_flag)
-
-
+        self.set_out_address()
 
 
 server = Server()
