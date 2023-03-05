@@ -4,6 +4,7 @@ from typing import Tuple
 import stun
 import json
 from utility.requests import generate_put_request
+from utility.connections import set_out_address
 # import logging
 
 class Server:
@@ -35,11 +36,8 @@ class Server:
             except: #add catching exceptions
                 pass
     
-    def set_out_address(self):
-        nat_type, self.out_host, self.out_port = stun.get_ip_info()
-        print(nat_type, self.out_host, self.out_port)
-    
-    def put_address_to_sig(self):
+    def put_address_to_sig(self) -> None:
+        """Gets a server's an out address and puts it to a signal server"""
         request  = generate_put_request(self.in_host, self.in_port, self.out_host, self.out_port, self.name)
         request_bytes = bytes(json.dumps(request), encoding="utf-8")
         sig_serv_address = (self.sig_server_host, self.sig_server_port)
@@ -48,7 +46,8 @@ class Server:
         sig_con.sendto(request_bytes, sig_serv_address)
         sig_con.close()
 
-    async def handle_connection(self, sock: socket, addr: Tuple[str, int]):
+    async def handle_connection(self, sock: socket, addr: Tuple[str, int]) -> None:
+        """Connects with a new member"""
         loop = asyncio.get_event_loop()
         print(f"Connected by {addr}")
         while True:
@@ -65,9 +64,9 @@ class Server:
         sock.close()
 
     async def main(self) -> None:
+        """Main loop, gets messages and process connections"""
         self.setup()
         print("Server started") # replace with logger + send message to creator
-        self.put_address_to_sig()
         loop = asyncio.get_event_loop()
         while True:
             print("Waiting for connection") # replace with logger + send message to creator
@@ -76,10 +75,12 @@ class Server:
             loop.create_task(self.handle_connection(sock, addr))
             
     def setup(self) -> None:
+        """Sets out basic setting such as max members count, out address, etc"""
         self.serv_sock.bind((self.in_host, self.in_port))
         self.serv_sock.listen(self.max_listeners)
         self.serv_sock.setblocking(self.set_blocking_flag)
-        self.set_out_address()
+        self.out_host, self.out_port = set_out_address()
+        self.put_address_to_sig()
 
 
 server = Server()
