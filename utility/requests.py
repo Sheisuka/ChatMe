@@ -23,3 +23,10 @@ def generate_put_request(in_host, in_port, out_host, out_port, name):
         "name": name
     }
     return request
+
+def generate_get_all_request(name):
+    request = {
+        "command": "get_all_servers",
+        "name": name
+    }
+    return request
