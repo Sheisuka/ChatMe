@@ -37,7 +37,7 @@ class SignalServer:
         name = data['name']
         data = self.cur.execute("""SELECT inaddress, outaddress FROM addresses WHERE name=(?);""", name).fetchone()[0]
         inaddress, outaddress = data[0], data[1]
-        await inaddress, outaddress
+        return inaddress, outaddress
 
     def setup(self) -> None:
         self.create_table()
@@ -55,18 +55,24 @@ class SignalServer:
                 break
             if not data:
                 break
-        answer = self.process_request(json.loads(data, encoding='utf-8'))
+        answer = self.process_request(json.loads(data, encoding='utf-8'), sock)
         sock.send(answer)
         sock.close()
     
-    def process_request(self, data):
+    def process_request(self, data, sock): # Replace with api??
         if data['command'] == 'put':
             self.save_address(data)
         elif data['command'] == 'get':
             self.get_address(data)
+        elif data['command'] == 'get_all_servers':
+            return self.get_all_servers()
 
-    async def get_all_chats(self):
-        ...
+
+    async def get_all_servers(self, requesting_host, requesting_port):
+        servers = self.cur.execute("""SELECT * FROM addresses""").fetchall()
+        #for server is servers:
+        #    if ping(server) then ...
+        return servers
     
     async def get_all_members(chat):
         ...
